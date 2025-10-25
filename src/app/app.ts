@@ -272,18 +272,30 @@ export class App implements OnInit {
   generateLocalParseTree(query: string) {
     if (!query.trim()) return null;
 
-    const parts = query.split(/\s+(AND|OR)\s+/);
     const operators: string[] = [];
     const terms: string[] = [];
 
-    // Extract operators and terms
-    for (let i = 0; i < parts.length; i++) {
-      if (parts[i] === 'AND' || parts[i] === 'OR') {
-        operators.push(parts[i]);
-      } else if (parts[i].trim()) {
-        terms.push(parts[i].trim());
-      }
+    // First, extract all operators including NOT, (, and )
+    const operatorPattern = /\b(AND|OR|NOT)\b|\(|\)/g;
+    let match;
+    while ((match = operatorPattern.exec(query)) !== null) {
+      operators.push(match[0]);
     }
+
+    // Extract terms by removing all operators and splitting on whitespace
+    let termsText = query;
+
+    // Remove operators while preserving word boundaries
+    termsText = termsText.replace(/\b(AND|OR|NOT)\b/g, ' ');
+    termsText = termsText.replace(/[()]/g, ' ');
+
+    // Split on whitespace and filter out empty strings
+    const extractedTerms = termsText
+      .split(/\s+/)
+      .map(term => term.trim())
+      .filter(term => term.length > 0);
+
+    terms.push(...extractedTerms);
 
     return {
       type: 'BooleanQuery',
